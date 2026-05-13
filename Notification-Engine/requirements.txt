@@ -1,0 +1,21 @@
+# API
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic-settings>=2.6.0
+
+# DB
+sqlalchemy[asyncio]>=2.0.36
+asyncpg>=0.30.0
+greenlet>=3.1.0
+
+# Broker & cache
+aio-pika>=9.4.3
+redis>=5.2.0
+
+# HTTP client for provider mocks / tests
+httpx>=0.28.0
+
+# Dev / test
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+aiosqlite>=0.20.0

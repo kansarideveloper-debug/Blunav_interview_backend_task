@@ -1,0 +1,70 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://notify:notify@postgres:5432/notify
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: python -m app.worker.main
+    environment:
+      DATABASE_URL: postgresql+asyncpg://notify:notify@postgres:5432/notify
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      LOG_LEVEL: INFO
+      FAILURE_SIMULATION_RATE: "0.05"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+
+  # Official library mirror (avoids Docker Hub auth.docker.io when that endpoint fails with EOF/VPN)
+  postgres:
+    image: public.ecr.aws/docker/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: notify
+      POSTGRES_PASSWORD: notify
+      POSTGRES_DB: notify
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notify -d notify"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: public.ecr.aws/docker/library/redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: public.ecr.aws/docker/library/rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
